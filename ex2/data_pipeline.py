@@ -128,6 +128,18 @@ class LogProcessor(DataProcessor):
                 self.total_processed += 1
 
 
+class Protocol:
+    def __init__(self):
+        pass
+
+
+class ExportPlugin(Protocol):
+    def __init__(self):
+        super().__init__()
+    
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+
+
 class DataStream:
     def __init__(self) -> None:
         self.processors: list[DataProcessor] = []
@@ -151,78 +163,24 @@ class DataStream:
             if not handled:
                 print(f"DataStream error - "
                       f"Can't process element in stream: {element}")
+    
+    def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
 
-    def print_processors_stats(self) -> None:
-        print("== DataStream statistics ==")
 
-        if not self.processors:
-            print("No processor found, no data")
-            return
+class Protocol:
+    def __init__(self):
+        pass
 
-        for processor in self.processors:
-            print(f"{processor.__class__.__name__}: "
-                  f"total {processor.total_processed}  items processed, "
-                  f"remaining {len(processor.storage)} on processor")
+
+class ExportPlugin(Protocol):
+    def __init__(self):
+        super().__init__()
+    
+    def process_output(self, data: list[tuple[int, str]]) -> None:
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Stream ===")
-
-    stream = DataStream()
-
-    print("\nInitialize Data Stream...")
-    stream.print_processors_stats()
-
-    number = NumericProcessor()
-
-    print("\nRegistering Numeric Processor")
-    stream.register_processor(number)
-
-    batch = [
-        "Hello world",
-        [3.14, -1, 2.71],
-        [
-            {
-                "log_level": "WARNING",
-                "log_message": "Telnet access! Use ssh instead"
-            },
-            {
-                "log_level": "INFO",
-                "log_message": "User wil is connected"
-            }
-        ],
-        42,
-        ["Hi", "five"]
-    ]
-
-    print(f"\nSend first batch of data on stream: {batch}")
-
-    stream.process_stream(batch)
-    stream.print_processors_stats()
-
-    print("\nRegistering other data processors")
-
-    text = TextProcessor()
-    log = LogProcessor()
-
-    stream.register_processor(text)
-    stream.register_processor(log)
-
-    print("Send the same batch again")
-    stream.process_stream(batch)
-    stream.print_processors_stats()
-
-    print("\nConsume some elements from the data processors:"
-          "Numeric 3, Text 2, Log 1")
-
-    for _ in range(3):
-        number.output()
-    for _ in range(2):
-        text.output()
-    log.output()
-
-    stream.print_processors_stats()
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
