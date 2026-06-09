@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import typing
-from typing import Any
+from typing import Any, Protocol
 
 
 class DataProcessor(ABC):
@@ -128,16 +128,29 @@ class LogProcessor(DataProcessor):
                 self.total_processed += 1
 
 
-class Protocol:
-    def __init__(self):
-        pass
-
-
 class ExportPlugin(Protocol):
-    def __init__(self):
-        super().__init__()
-    
     def process_output(self, data: list[tuple[int, str]]) -> None:
+        ...
+
+
+class CSVExportPlugin:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        lines: list[str] = []
+        for _, value in data:
+            lines.append(value)
+
+        print("CSV Output:")
+        print(",".join(lines))
+
+
+class JSONExportPlugin:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        items: list[str] = []
+        for rank, value in data:
+            items.append(f'"item_{rank}": "{value}"')
+
+        print("JSON Output:")
+        print("{" + ", ".join(items) + "}")
 
 
 class DataStream:
@@ -163,24 +176,107 @@ class DataStream:
             if not handled:
                 print(f"DataStream error - "
                       f"Can't process element in stream: {element}")
-    
+
+    def print_processors_stats(self) -> None:
+        print("\n== DataStream statistics ==")
+
+        if not self.processors:
+            print("No processor found, no data")
+            return
+
+        for processor in self.processors:
+            print(f"{processor.__class__.__name__}: "
+                  f"total {processor.total_processed} items processed, "
+                  f"remaining {len(processor.storage)} on processor")
+
     def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
+        for processor in self.processors:
 
+            collected: list[tuple[int, str]] = []
 
-class Protocol:
-    def __init__(self):
-        pass
-
-
-class ExportPlugin(Protocol):
-    def __init__(self):
-        super().__init__()
-    
-    def process_output(self, data: list[tuple[int, str]]) -> None:
+            for _ in range(nb):
+                try:
+                    collected.append(processor.output())
+                except ValueError:
+                    break
+            if collected:
+                plugin.process_output(collected)
 
 
 def main() -> None:
+    print("=== Code Nexus - Data Pipeline ===")
+
+    stream = DataStream()
+
+    print("\nInitialize Data Stream...")
+    stream.print_processors_stats()
+
+    number = NumericProcessor()
+    text = TextProcessor()
+    log = LogProcessor()
+
+    stream.register_processor(number)
+    stream.register_processor(text)
+    stream.register_processor(log)
+
+    print("\nRegistering Processors")
+
+    batch1 = [
+        "Hello world",
+        [3.14, -1, 2.71],
+        [
+            {
+                "log_level": "WARNING",
+                "log_message": "Telnet access! Use ssh instead"
+            },
+            {
+                "log_level": "INFO",
+                "log_message": "User wil is connected"
+            }
+        ],
+        42,
+        ["Hi", "five"]
+    ]
+
+    print(f"\nSend first batch of data on stream: {batch1}")
+
+    stream.process_stream(batch1)
+    stream.print_processors_stats()
+
+    print("\nSend 3 processed data from each processor to a CSV plugin:")
+    stream.output_pipeline(3, CSVExportPlugin())
+    stream.print_processors_stats()
+
+    batch2 = [
+        21,
+        [
+            "I love AI",
+            "LLMs are wonderful",
+            "Stay healthy"
+        ],
+        [
+            {
+                "log_level": "ERROR",
+                "log_message": "500 server crash"
+            },
+            {
+                "log_level": "NOTICE",
+                "log_message": "Certificate expires in 10 days"
+            }
+        ],
+        [32, 42, 64, 84, 128, 168],
+        "World hello"
+    ]
+
+    print(f"\nSend another batch of data: {batch2}")
+
+    stream.process_stream(batch2)
+    stream.print_processors_stats()
+
+    print("\nSend 5 processed data from each processor to a JSON plugin:")
+    stream.output_pipeline(5, JSONExportPlugin())
+    stream.print_processors_stats()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

@@ -161,7 +161,7 @@ class DataStream:
 
         for processor in self.processors:
             print(f"{processor.__class__.__name__}: "
-                  f"total {processor.total_processed}  items processed, "
+                  f"total {processor.total_processed} items processed, "
                   f"remaining {len(processor.storage)} on processor")
 
 
